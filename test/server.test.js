@@ -10,6 +10,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'heap-srv-'));
 process.env.HEAP_DATA_DIR = dir;
 process.env.PORT = '0';
 process.env.NO_OPEN = '1';
+process.env.NODE_ENV = 'test';
 
 const { startServer } = require('../server');
 let server, base;
