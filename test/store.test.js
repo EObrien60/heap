@@ -63,3 +63,46 @@ test('setActiveSpace updates state and rejects unknown id', () => {
   assert.equal(s.setActiveSpace(gid).activeSpaceId, gid);
   assert.throws(() => s.setActiveSpace('nope'));
 });
+
+test('createSpace seeds hints from name and assigns next order', () => {
+  const s = freshStore();
+  const sp = s.createSpace({ name: 'Billing API' });
+  assert.deepEqual(sp.hints.sort(), ['api', 'billing']);
+  assert.ok(sp.color);
+  assert.ok(s.listSpaces().some((x) => x.id === sp.id));
+});
+
+test('updateSpace patches name/hints/resumeNote/color/order', () => {
+  const s = freshStore();
+  const sp = s.createSpace({ name: 'Acme' });
+  const up = s.updateSpace(sp.id, { resumeNote: 'fixing auth bug', hints: ['acme', 'auth'], color: '#fff' });
+  assert.equal(up.resumeNote, 'fixing auth bug');
+  assert.deepEqual(up.hints, ['acme', 'auth']);
+  assert.equal(up.color, '#fff');
+});
+
+test('deleteSpace reassigns its items to next remaining space', () => {
+  const s = freshStore();
+  const gid = s.listSpaces()[0].id;
+  const sp = s.createSpace({ name: 'Temp' });
+  const it = s.createTextItem({ content: 'hello', spaceId: sp.id }).item;
+  const res = s.deleteSpace(sp.id);
+  assert.ok(res.reassignedTo);
+  assert.notEqual(res.reassignedTo, sp.id);
+  const moved = s.searchItems({ all: true, q: '' }).find((i) => i.id === it.id);
+  assert.equal(moved.spaceId, res.reassignedTo);
+});
+
+test('deleting the active space moves active to reassignment target', () => {
+  const s = freshStore();
+  const sp = s.createSpace({ name: 'Temp' });
+  s.setActiveSpace(sp.id);
+  const res = s.deleteSpace(sp.id);
+  assert.equal(s.getState().activeSpaceId, res.reassignedTo);
+});
+
+test('cannot delete the last remaining space', () => {
+  const s = freshStore();
+  const gid = s.listSpaces()[0].id;
+  assert.throws(() => s.deleteSpace(gid), /last/i);
+});
