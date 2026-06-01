@@ -106,3 +106,67 @@ test('cannot delete the last remaining space', () => {
   const gid = s.listSpaces()[0].id;
   assert.throws(() => s.deleteSpace(gid), /last/i);
 });
+
+test('createTextItem lands in active space when no spaceId given', () => {
+  const s = freshStore();
+  const gid = s.getState().activeSpaceId;
+  const { item } = s.createTextItem({ content: 'SELECT * FROM t' });
+  assert.equal(item.spaceId, gid);
+  assert.equal(item.type, 'sql');
+});
+
+test('createTextItem suggests another space when content matches its hints', () => {
+  const s = freshStore();
+  const billing = s.createSpace({ name: 'Billing' });
+  const { suggestedSpace } = s.createTextItem({ content: 'the billing webhook is failing' });
+  assert.ok(suggestedSpace);
+  assert.equal(suggestedSpace.id, billing.id);
+});
+
+test('no suggestion when content matches only the active space', () => {
+  const s = freshStore();
+  const gid = s.getState().activeSpaceId;
+  s.updateSpace(gid, { hints: ['general', 'core'] });
+  const { suggestedSpace } = s.createTextItem({ content: 'core stuff here' });
+  assert.equal(suggestedSpace, null);
+});
+
+test('image items never produce a suggestion', () => {
+  const s = freshStore();
+  s.createSpace({ name: 'Billing' });
+  const r = s.createImageItem({ dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' });
+  assert.equal(r.suggestedSpace, undefined);
+  assert.equal(r.item.kind, 'image');
+});
+
+test('searchItems scoped to a space excludes other spaces; all=true includes them', () => {
+  const s = freshStore();
+  const gid = s.getState().activeSpaceId;
+  const other = s.createSpace({ name: 'Other' });
+  s.createTextItem({ content: 'alpha in general' });
+  s.createTextItem({ content: 'beta in other', spaceId: other.id });
+  const scoped = s.searchItems({ spaceId: gid, all: false, q: '' });
+  assert.equal(scoped.length, 1);
+  assert.equal(scoped[0].content, 'alpha in general');
+  const global = s.searchItems({ all: true, q: 'beta' });
+  assert.equal(global.length, 1);
+  assert.equal(global[0].spaceId, other.id);
+  assert.equal(global[0].spaceName, 'Other');
+});
+
+test('updateItem can move an item to another space', () => {
+  const s = freshStore();
+  const other = s.createSpace({ name: 'Other' });
+  const { item } = s.createTextItem({ content: 'move me' });
+  const moved = s.updateItem(item.id, { spaceId: other.id });
+  assert.equal(moved.spaceId, other.id);
+});
+
+test('pinned items sort before unpinned within scope', () => {
+  const s = freshStore();
+  const a = s.createTextItem({ content: 'aaa' }).item;
+  const b = s.createTextItem({ content: 'bbb' }).item;
+  s.updateItem(a.id, { pinned: true });
+  const list = s.searchItems({ spaceId: s.getState().activeSpaceId, all: false, q: '' });
+  assert.equal(list[0].id, a.id);
+});
