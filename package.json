@@ -1,0 +1,11 @@
+{
+  "name": "heap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A fast, light scratch store for the stuff you constantly paste in and out.",
+  "bin": { "heap": "server.js" },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" }
+}

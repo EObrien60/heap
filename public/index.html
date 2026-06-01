@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>heap</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>📥</text></svg>" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">heap</div>
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="Search the heap…  ( / )" autocomplete="off" spellcheck="false" />
+      <span id="count" class="count"></span>
+    </div>
+  </header>
+
+  <div class="paste-hint" id="pasteHint">
+    Paste anything (⌘V) — text or image — or type below and hit ⌘↵
+  </div>
+
+  <div class="composer">
+    <textarea id="composer" placeholder="Drop a quick note, query, snippet…  (⌘↵ to save)"
+      rows="2" spellcheck="false"></textarea>
+    <button id="addBtn" title="Save (⌘↵)">Save</button>
+  </div>
+
+  <main id="list" class="list" tabindex="0"></main>
+
+  <div id="toast" class="toast"></div>
+
+  <footer class="help">
+    <span><kbd>/</kbd> search</span>
+    <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
+    <span><kbd>↵</kbd> copy</span>
+    <span><kbd>p</kbd> pin</span>
+    <span><kbd>e</kbd> edit</span>
+    <span><kbd>⌫</kbd> delete</span>
+    <span><kbd>⌘V</kbd> paste in</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
