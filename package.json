@@ -5,7 +5,8 @@
   "description": "A fast, light scratch store for the stuff you constantly paste in and out.",
   "bin": { "heap": "server.js" },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "engines": { "node": ">=18" }
 }
