@@ -13,6 +13,7 @@ const paletteEl = $('#palette');
 const paletteInput = $('#paletteInput');
 const paletteList = $('#paletteList');
 const resumeText = $('#resumeText');
+const scopeToggle = $('#scopeToggle');
 
 let spaces = [];
 let activeSpaceId = null;
@@ -23,6 +24,7 @@ let palRows = [];          // current palette rows
 let items = [];
 let selected = -1;     // index into items
 let editingId = null;
+let suggestion = null; // { itemId, spaceId, spaceName }
 
 // ---------- api ----------
 async function api(method, url, body) {
@@ -73,6 +75,7 @@ resumeText.addEventListener('blur', async () => {
 });
 async function switchSpace(id) {
   if (id === activeSpaceId) return;
+  suggestion = null;
   activeSpaceId = id;
   await api('PATCH', '/api/state', { activeSpaceId: id });
   renderChip();
@@ -242,9 +245,11 @@ function card(it, i) {
     <div class="card${sel}${pinned}" data-id="${it.id}" data-i="${i}">
       <div class="card-head">
         <span class="badge ${it.type}">${it.type}</span>
+        ${searchAll && it.spaceName ? `<span class="space-tag"><span class="dot" style="background:${(spaces.find(s=>s.id===it.spaceId)||{}).color||'#888'}"></span>${escapeHtml(it.spaceName)}</span>` : ''}
         <span class="card-title">${escapeHtml(it.title)}</span>
         <span class="card-time" title="${meta}">${timeAgo(it.updatedAt)}</span>
         <div class="card-actions">
+          ${it.type === 'url' ? `<button class="icon-btn open" data-act="open" title="Open ↗">↗</button>` : ''}
           <button class="icon-btn copy" data-act="copy" title="Copy (↵)">⧉</button>
           <button class="icon-btn pin ${it.pinned ? 'on' : ''}" data-act="pin" title="Pin (p)">${it.pinned ? '★' : '☆'}</button>
           ${it.kind === 'text' ? '<button class="icon-btn edit" data-act="edit" title="Edit (e)">✎</button>' : ''}
@@ -252,6 +257,7 @@ function card(it, i) {
         </div>
       </div>
       ${body}
+      ${suggestion && suggestion.itemId === it.id ? `<div class="nudge" data-act="move" data-space="${suggestion.spaceId}">↪ ${escapeHtml(suggestion.spaceName)}? move<span class="x" data-act="dismiss">✕</span></div>` : ''}
     </div>`;
 }
 
@@ -321,7 +327,8 @@ async function commitEdit(save) {
 async function addText() {
   const content = composerEl.value;
   if (!content.trim()) return;
-  await api('POST', '/api/items', { content });
+  const r = await api('POST', '/api/items', { content });
+  suggestion = r.suggestedSpace ? { itemId: r.item.id, spaceId: r.suggestedSpace.id, spaceName: r.suggestedSpace.name } : null;
   composerEl.value = '';
   composerEl.style.height = '';
   searchEl.value = '';
@@ -361,6 +368,9 @@ listEl.addEventListener('click', (e) => {
     else if (act === 'pin') togglePin(it);
     else if (act === 'edit') startEdit(it);
     else if (act === 'del') del(it);
+    else if (act === 'open') window.open(it.content, '_blank');
+    else if (act === 'dismiss') { suggestion = null; render(); }
+    else if (act === 'move') { api('PATCH', '/api/items/' + it.id, { spaceId: actBtn.dataset.space }).then(() => { suggestion = null; load(); }); }
     return;
   }
   if (editingId === id) return; // don't copy while editing
@@ -395,7 +405,8 @@ window.addEventListener('paste', async (e) => {
   if (text && text.trim() && document.activeElement !== composerEl && document.activeElement !== searchEl) {
     e.preventDefault();
     flashHint();
-    await api('POST', '/api/items', { content: text });
+    const r = await api('POST', '/api/items', { content: text });
+    suggestion = r.suggestedSpace ? { itemId: r.item.id, spaceId: r.suggestedSpace.id, spaceName: r.suggestedSpace.name } : null;
     searchEl.value = '';
     selected = 0;
     await load();
@@ -418,6 +429,7 @@ window.addEventListener('drop', async (e) => {
 
 // ---------- keyboard ----------
 searchEl.addEventListener('input', () => {
+  suggestion = null;
   clearTimeout(searchDebounce);
   searchDebounce = setTimeout(load, 90);
 });
@@ -472,6 +484,12 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+function renderScope() { scopeToggle.classList.toggle('on', searchAll); }
+scopeToggle.addEventListener('click', () => { searchAll = !searchAll; renderScope(); load(); });
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === '\\') { e.preventDefault(); searchAll = !searchAll; renderScope(); load(); }
+});
+
 // auto-grow composer
 composerEl.addEventListener('input', () => {
   composerEl.style.height = 'auto';
@@ -483,4 +501,4 @@ $('#addBtn').addEventListener('click', addText);
 setInterval(() => { if (!editingId) render(); }, 30000);
 
 // ---------- boot ----------
-(async () => { await loadSpaces(); await load(); })();
+(async () => { await loadSpaces(); renderScope(); await load(); })();

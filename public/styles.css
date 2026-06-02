@@ -378,3 +378,11 @@ body {
 .resume-text:hover { border-color: var(--border); }
 .resume-text.editing { border-color: var(--accent); background: var(--bg-elev); outline: none; white-space: pre-wrap; }
 .list-section { color: var(--text-faint); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; margin: 8px 2px 2px; }
+.scope-toggle { position: absolute; right: 8px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-faint); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; cursor: pointer; }
+.scope-toggle.on { background: var(--accent); color: #07111f; border-color: var(--accent); }
+.space-tag { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; color: var(--text); display: inline-flex; align-items: center; gap: 4px; }
+.space-tag .dot { width: 7px; height: 7px; border-radius: 50%; }
+.nudge { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: var(--accent-dim); color: var(--text); border: 1px solid var(--border-strong); border-radius: 7px; padding: 4px 9px; font-size: 11px; cursor: pointer; }
+.nudge:hover { border-color: var(--accent); }
+.nudge .x { color: var(--text-faint); margin-left: 4px; }
+.search-wrap .count { right: 44px; }
