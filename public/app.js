@@ -165,13 +165,13 @@ modalOk.addEventListener('click', () => closeModal(modalInput.hidden ? true : mo
 modalCancel.addEventListener('click', () => closeModal(modalInput.hidden ? false : null));
 modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(modalInput.hidden ? false : null); });
 modalInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); closeModal(modalInput.value); }
-  else if (e.key === 'Escape') { e.preventDefault(); closeModal(null); }
+  if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); closeModal(modalInput.value); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeModal(null); }
 });
 document.addEventListener('keydown', (e) => {
   if (modalEl.hidden) return;
-  if (modalInput.hidden && e.key === 'Escape') { e.preventDefault(); closeModal(false); }
-  if (modalInput.hidden && e.key === 'Enter') { e.preventDefault(); closeModal(true); }
+  if (modalInput.hidden && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeModal(false); }
+  if (modalInput.hidden && e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); closeModal(true); }
 }, true); // capture so it runs before the app's other global keydown handlers
 
 async function runPaletteRow(row) {
