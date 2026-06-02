@@ -50,20 +50,23 @@ function renderChip() {
   spaceChip.querySelector('.dot').style.background = sp.color;
   renderResume();
 }
+let resumeEditingSpaceId = null;
 function renderResume() {
   const sp = activeSpace();
-  resumeText.textContent = sp ? sp.resumeNote : '';
+  resumeText.textContent = sp ? (sp.resumeNote || '') : '';
 }
-resumeText.addEventListener('focus', () => resumeText.classList.add('editing'));
+resumeText.addEventListener('focus', () => { resumeEditingSpaceId = activeSpaceId; resumeText.classList.add('editing'); });
 resumeText.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); resumeText.blur(); }
   else if (e.key === 'Escape') { e.preventDefault(); renderResume(); resumeText.blur(); }
 });
 resumeText.addEventListener('blur', async () => {
   resumeText.classList.remove('editing');
-  const sp = activeSpace();
+  const sp = spaces.find((s) => s.id === resumeEditingSpaceId);
+  resumeEditingSpaceId = null;
+  if (!sp) return;
   const val = resumeText.textContent.trim();
-  if (sp && val !== sp.resumeNote) {
+  if (val !== (sp.resumeNote || '')) {
     await api('PATCH', '/api/spaces/' + sp.id, { resumeNote: val });
     sp.resumeNote = val;
   }
@@ -195,6 +198,7 @@ function highlight(text, type) {
 }
 
 // ---------- render ----------
+function cardEl(i) { return listEl.querySelector('.card[data-i="' + i + '"]'); }
 function render() {
   if (items.length === 0) {
     listEl.innerHTML = `<div class="empty"><div class="big">📥</div>${
@@ -214,7 +218,7 @@ function render() {
   listEl.innerHTML = html;
   // ensure selected visible
   if (selected >= 0) {
-    const el = listEl.children[selected];
+    const el = cardEl(selected);
     if (el) el.scrollIntoView({ block: 'nearest' });
   }
 }
@@ -442,7 +446,7 @@ document.addEventListener('keydown', (e) => {
   // from search: arrow down jumps into list
   if (document.activeElement === searchEl) {
     if (e.key === 'ArrowDown') { e.preventDefault(); selected = 0; searchEl.blur(); listEl.focus(); render(); }
-    else if (e.key === 'Enter' && items.length) { e.preventDefault(); selected = 0; copyItem(items[0], listEl.children[0]); }
+    else if (e.key === 'Enter' && items.length) { e.preventDefault(); selected = 0; copyItem(items[0], cardEl(0)); }
     return;
   }
 
@@ -456,7 +460,7 @@ document.addEventListener('keydown', (e) => {
     if (selected <= 0) { selected = -1; searchEl.focus(); render(); }
     else { selected -= 1; render(); }
   } else if (e.key === 'Enter') {
-    if (items[selected]) { e.preventDefault(); copyItem(items[selected], listEl.children[selected]); }
+    if (items[selected]) { e.preventDefault(); copyItem(items[selected], cardEl(selected)); }
   } else if (e.key === 'p') {
     if (items[selected]) { e.preventDefault(); togglePin(items[selected]); }
   } else if (e.key === 'e') {
