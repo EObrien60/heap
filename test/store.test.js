@@ -81,6 +81,17 @@ test('updateSpace patches name/hints/resumeNote/color/order', () => {
   assert.equal(up.color, '#fff');
 });
 
+test('renaming a space re-seeds its hints from the new name (no explicit hints)', () => {
+  const s = freshStore();
+  const sp = s.createSpace({ name: 'Scratch' });
+  assert.deepEqual(sp.hints, ['scratch']);
+  const up = s.updateSpace(sp.id, { name: 'Billing API' });
+  assert.deepEqual(up.hints.sort(), ['api', 'billing']);
+  // explicit hints still win over re-seeding
+  const up2 = s.updateSpace(sp.id, { name: 'Payments', hints: ['pay', 'stripe'] });
+  assert.deepEqual(up2.hints, ['pay', 'stripe']);
+});
+
 test('deleteSpace reassigns its items to next remaining space', () => {
   const s = freshStore();
   const gid = s.listSpaces()[0].id;

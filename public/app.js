@@ -102,8 +102,13 @@ function fuzzy(q, text) {
 
 function buildPalette(q) {
   const matchSpaces = spaces.filter((s) => fuzzy(q, s.name));
+  const active = activeSpace();
   const cmds = [
     { type: 'cmd', id: 'new', label: '＋ New space…' },
+    ...(active ? [
+      { type: 'cmd', id: 'rename', label: `✎ Rename “${active.name}”…` },
+      { type: 'cmd', id: 'delete', label: `🗑 Delete “${active.name}”…` },
+    ] : []),
   ].filter((c) => fuzzy(q, c.label));
   palRows = [
     ...matchSpaces.map((s) => ({ type: 'space', id: s.id, label: s.name, color: s.color })),
@@ -133,6 +138,36 @@ async function runPaletteRow(row) {
       const sp = (await api('POST', '/api/spaces', { name: name.trim() })).space;
       await loadSpaces();
       await switchSpace(sp.id);
+    }
+  }
+  else if (row.id === 'rename') {
+    const sp = activeSpace();
+    const name = prompt('Rename space:', sp ? sp.name : '');
+    closePalette();
+    if (sp && name && name.trim() && name.trim() !== sp.name) {
+      await api('PATCH', '/api/spaces/' + sp.id, { name: name.trim() });
+      await loadSpaces();
+      renderResume();
+      await load();
+    }
+  }
+  else if (row.id === 'delete') {
+    const sp = activeSpace();
+    closePalette();
+    if (!sp) return;
+    if (spaces.length <= 1) { toast("Can't delete your only space"); return; }
+    if (!confirm(`Delete “${sp.name}”? Its items move to another space.`)) return;
+    try {
+      const { reassignedTo } = await api('DELETE', '/api/spaces/' + sp.id);
+      await loadSpaces();
+      activeSpaceId = reassignedTo;
+      renderChip();
+      searchEl.value = '';
+      selected = -1;
+      await load();
+      toast('Space deleted');
+    } catch (err) {
+      toast('Delete failed: ' + err.message);
     }
   }
 }
