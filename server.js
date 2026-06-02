@@ -87,7 +87,9 @@ const server = http.createServer(async (req, res) => {
       const spaceId = url.searchParams.get('space') || store.getState().activeSpaceId;
       const q = url.searchParams.get('q') || '';
       const items = store.searchItems({ spaceId, all, q });
-      return sendJSON(res, 200, { items, total: store._state().items.length });
+      const allItems = store._state().items;
+      const total = all ? allItems.length : allItems.filter((i) => i.spaceId === spaceId).length;
+      return sendJSON(res, 200, { items, total });
     }
     if (p.startsWith('/api/items/') && method === 'GET') {
       const item = store.getItem(p.slice('/api/items/'.length));

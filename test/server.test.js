@@ -62,3 +62,14 @@ test('delete space reassigns; cannot delete last', async () => {
   assert.equal(del.status, 200);
   assert.ok(del.json.reassignedTo);
 });
+
+test('GET /api/items total is scoped to the active space, not global', async () => {
+  const a = (await req('POST', '/api/spaces', { name: 'CountScope' })).json.space;
+  await req('PATCH', '/api/state', { activeSpaceId: a.id });
+  await req('POST', '/api/items', { content: 'count one' });
+  await req('POST', '/api/items', { content: 'count two' });
+  const scoped = (await req('GET', '/api/items')).json;
+  assert.equal(scoped.total, 2);            // only this space's items
+  const global = (await req('GET', '/api/items?all=1')).json;
+  assert.ok(global.total > 2);              // global is larger (other tests added items)
+});
