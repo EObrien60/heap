@@ -10,7 +10,6 @@ const path = require('path');
 const fs = require('fs');
 const { app, BrowserWindow, Tray, Menu, globalShortcut, nativeImage, shell } = require('electron');
 const { loadConfig } = require('./config');
-const TRAY_ICON_DATA_URL = require('./tray-icon');
 
 // Single-instance: a second launch just surfaces the existing window.
 if (!app.requestSingleInstanceLock()) {
@@ -55,8 +54,16 @@ function createWindow() {
 
   // Open external links (the url ↗ button, any target=_blank) in the real browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+    if (/^(https?|mailto|tel):/i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // Keep the main window pinned to our local app; open anything else externally.
+  win.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith(`http://localhost:${serverPort}`)) {
+      e.preventDefault();
+      if (/^(https?|mailto|tel):/i.test(url)) shell.openExternal(url);
+    }
   });
 
   // Native styling hook: the web app stays browser-agnostic; we flag it as in-app.
@@ -146,7 +153,8 @@ function updateTrayMenu() {
 }
 
 function createTray() {
-  const icon = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL);
+  // createFromPath auto-loads tray-icon@2x.png for retina menu bars.
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'tray-icon.png'));
   icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip('heap');

@@ -7,6 +7,10 @@ node_modules/
 # Electron build output
 dist/
 
+# Icon intermediates (icon.icns + source SVGs are committed; these are regenerable)
+assets/icon.iconset/
+assets/*.svg.png
+
 # Test/automation artifacts
 .playwright-mcp/
 *.tmp

@@ -127,7 +127,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 function startServer() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    server.once('error', reject); // surface bind failures (e.g. EADDRINUSE) instead of hanging
     server.listen(PORT, () => {
       const port = server.address().port;
       if (process.env.NODE_ENV !== 'test') {
