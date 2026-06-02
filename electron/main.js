@@ -156,10 +156,17 @@ function createTray() {
 }
 
 function registerHotkey() {
-  const ok = globalShortcut.register(cfg.hotkey, toggle);
+  let ok = false;
+  try {
+    // A hand-edited, malformed accelerator in config.json makes register() throw,
+    // not return false — catch it so a typo can't crash startup.
+    ok = globalShortcut.register(cfg.hotkey, toggle);
+  } catch (err) {
+    console.warn('heap: invalid global hotkey', cfg.hotkey, '-', err.message);
+  }
   if (!ok) {
-    console.warn('heap: could not register global hotkey', cfg.hotkey, '(already in use?)');
-    if (tray) tray.setToolTip(`heap — hotkey ${cfg.hotkey} unavailable (in use)`);
+    console.warn('heap: could not register global hotkey', cfg.hotkey, '(in use or invalid)');
+    if (tray) tray.setToolTip(`heap — hotkey ${cfg.hotkey} unavailable; edit config.json`);
   }
 }
 
