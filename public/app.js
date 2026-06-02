@@ -14,6 +14,11 @@ const paletteInput = $('#paletteInput');
 const paletteList = $('#paletteList');
 const resumeText = $('#resumeText');
 const scopeToggle = $('#scopeToggle');
+const modalEl = $('#modal');
+const modalMsg = $('#modalMsg');
+const modalInput = $('#modalInput');
+const modalOk = $('#modalOk');
+const modalCancel = $('#modalCancel');
 
 let spaces = [];
 let activeSpaceId = null;
@@ -106,8 +111,8 @@ function buildPalette(q) {
   const cmds = [
     { type: 'cmd', id: 'new', label: '＋ New space…' },
     ...(active ? [
-      { type: 'cmd', id: 'rename', label: `✎ Rename “${active.name}”…` },
-      { type: 'cmd', id: 'delete', label: `🗑 Delete “${active.name}”…` },
+      { type: 'cmd', id: 'rename', label: `✎ Rename "${active.name}"…` },
+      { type: 'cmd', id: 'delete', label: `🗑 Delete "${active.name}"…` },
     ] : []),
   ].filter((c) => fuzzy(q, c.label));
   palRows = [
@@ -128,12 +133,53 @@ function buildPalette(q) {
   }).join('');
 }
 
+let modalResolve = null;
+function closeModal(value) {
+  if (!modalResolve) return;
+  const r = modalResolve; modalResolve = null;
+  modalEl.hidden = true;
+  r(value);
+}
+function askText(label, initial = '') {
+  return new Promise((resolve) => {
+    modalResolve = resolve;
+    modalMsg.textContent = label;
+    modalInput.hidden = false;
+    modalInput.value = initial;
+    modalEl.hidden = false;
+    modalInput.focus();
+    modalInput.select();
+  });
+}
+function askConfirm(message) {
+  return new Promise((resolve) => {
+    modalResolve = resolve;
+    modalMsg.textContent = message;
+    modalInput.hidden = true;
+    modalEl.hidden = false;
+    modalOk.focus();
+  });
+}
+// OK resolves with the input text (askText) or true (askConfirm); Cancel/Esc/backdrop resolve null/false.
+modalOk.addEventListener('click', () => closeModal(modalInput.hidden ? true : modalInput.value));
+modalCancel.addEventListener('click', () => closeModal(modalInput.hidden ? false : null));
+modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(modalInput.hidden ? false : null); });
+modalInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); closeModal(modalInput.value); }
+  else if (e.key === 'Escape') { e.preventDefault(); closeModal(null); }
+});
+document.addEventListener('keydown', (e) => {
+  if (modalEl.hidden) return;
+  if (modalInput.hidden && e.key === 'Escape') { e.preventDefault(); closeModal(false); }
+  if (modalInput.hidden && e.key === 'Enter') { e.preventDefault(); closeModal(true); }
+}, true); // capture so it runs before the app's other global keydown handlers
+
 async function runPaletteRow(row) {
   if (!row) return;
   if (row.type === 'space') { closePalette(); await switchSpace(row.id); }
   else if (row.id === 'new') {
-    const name = prompt('New space name:');
     closePalette();
+    const name = await askText('New space name:');
     if (name && name.trim()) {
       const sp = (await api('POST', '/api/spaces', { name: name.trim() })).space;
       await loadSpaces();
@@ -142,8 +188,8 @@ async function runPaletteRow(row) {
   }
   else if (row.id === 'rename') {
     const sp = activeSpace();
-    const name = prompt('Rename space:', sp ? sp.name : '');
     closePalette();
+    const name = await askText('Rename space:', sp ? sp.name : '');
     if (sp && name && name.trim() && name.trim() !== sp.name) {
       await api('PATCH', '/api/spaces/' + sp.id, { name: name.trim() });
       await loadSpaces();
@@ -156,7 +202,8 @@ async function runPaletteRow(row) {
     closePalette();
     if (!sp) return;
     if (spaces.length <= 1) { toast("Can't delete your only space"); return; }
-    if (!confirm(`Delete “${sp.name}”? Its items move to another space.`)) return;
+    const ok = await askConfirm(`Delete "${sp.name}"? Its items move to another space.`);
+    if (!ok) return;
     try {
       const { reassignedTo } = await api('DELETE', '/api/spaces/' + sp.id);
       await loadSpaces();
