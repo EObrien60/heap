@@ -1,0 +1,12 @@
+# Personal scratch — never publish
+data/
+
+# Node
+node_modules/
+
+# Test/automation artifacts
+.playwright-mcp/
+*.tmp
+
+# macOS
+.DS_Store
