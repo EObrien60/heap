@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "description": "A fast, light scratch store for the stuff you constantly paste in and out.",
+  "author": "Ethan O'Brien <ethan@triplebolt.io>",
+  "homepage": "https://github.com/EObrien60/heap",
   "main": "electron/main.js",
   "bin": { "heap": "server.js" },
   "scripts": {
