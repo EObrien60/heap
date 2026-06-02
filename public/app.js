@@ -7,6 +7,17 @@ const composerEl = $('#composer');
 const countEl = $('#count');
 const toastEl = $('#toast');
 const pasteHint = $('#pasteHint');
+const spaceChip = $('#spaceChip');
+const spaceNameEl = $('#spaceName');
+const paletteEl = $('#palette');
+const paletteInput = $('#paletteInput');
+const paletteList = $('#paletteList');
+
+let spaces = [];
+let activeSpaceId = null;
+let searchAll = false;     // search scope toggle (Task 7 uses it)
+let palSel = 0;            // palette selection index
+let palRows = [];          // current palette rows
 
 let items = [];
 let selected = -1;     // index into items
@@ -24,10 +35,106 @@ async function api(method, url, body) {
   return res.status === 200 || res.status === 201 ? res.json() : null;
 }
 
+async function loadSpaces() {
+  spaces = (await api('GET', '/api/spaces')).spaces;
+  const st = await api('GET', '/api/state');
+  activeSpaceId = st.activeSpaceId;
+  renderChip();
+}
+function activeSpace() { return spaces.find((s) => s.id === activeSpaceId) || spaces[0]; }
+function renderChip() {
+  const sp = activeSpace();
+  if (!sp) return;
+  spaceNameEl.textContent = sp.name;
+  spaceChip.querySelector('.dot').style.background = sp.color;
+}
+async function switchSpace(id) {
+  if (id === activeSpaceId) return;
+  activeSpaceId = id;
+  await api('PATCH', '/api/state', { activeSpaceId: id });
+  renderChip();
+  searchEl.value = '';
+  selected = -1;
+  await load();
+}
+
+function openPalette() {
+  paletteEl.hidden = false;
+  paletteInput.value = '';
+  buildPalette('');
+  paletteInput.focus();
+}
+function closePalette() { paletteEl.hidden = true; paletteInput.blur(); }
+
+function fuzzy(q, text) {
+  q = q.toLowerCase(); text = text.toLowerCase();
+  if (!q) return true;
+  let i = 0;
+  for (const ch of text) { if (ch === q[i]) i++; if (i === q.length) return true; }
+  return false;
+}
+
+function buildPalette(q) {
+  const matchSpaces = spaces.filter((s) => fuzzy(q, s.name));
+  const cmds = [
+    { type: 'cmd', id: 'new', label: '＋ New space…' },
+  ].filter((c) => fuzzy(q, c.label));
+  palRows = [
+    ...matchSpaces.map((s) => ({ type: 'space', id: s.id, label: s.name, color: s.color })),
+    ...cmds,
+  ];
+  // assign 1-9 nums by the space's position in the full ordered list
+  palRows.forEach((r) => { if (r.type === 'space') { const idx = spaces.findIndex((s) => s.id === r.id); r.num = idx < 9 ? idx + 1 : null; } });
+  palSel = 0;
+  paletteList.innerHTML = palRows.map((r, i) => {
+    if (r.type === 'space') {
+      return `<div class="palette-row ${i === palSel ? 'active' : ''}" data-i="${i}">
+        <span class="dot" style="background:${r.color}"></span><span>${escapeHtml(r.label)}</span>
+        ${r.num ? `<span class="num">${r.num}</span>` : ''}${r.id === activeSpaceId ? '<span class="num">active</span>' : ''}
+      </div>`;
+    }
+    return `<div class="palette-row cmd ${i === palSel ? 'active' : ''}" data-i="${i}">${escapeHtml(r.label)}</div>`;
+  }).join('');
+}
+
+async function runPaletteRow(row) {
+  if (!row) return;
+  if (row.type === 'space') { closePalette(); await switchSpace(row.id); }
+  else if (row.id === 'new') {
+    const name = prompt('New space name:');
+    closePalette();
+    if (name && name.trim()) {
+      const sp = (await api('POST', '/api/spaces', { name: name.trim() })).space;
+      await loadSpaces();
+      await switchSpace(sp.id);
+    }
+  }
+}
+
+paletteInput.addEventListener('input', () => buildPalette(paletteInput.value));
+paletteInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); palSel = Math.min(palRows.length - 1, palSel + 1); reSelect(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); palSel = Math.max(0, palSel - 1); reSelect(); }
+  else if (e.key === 'Enter') { e.preventDefault(); runPaletteRow(palRows[palSel]); }
+});
+function reSelect() {
+  [...paletteList.children].forEach((el, i) => el.classList.toggle('active', i === palSel));
+}
+paletteList.addEventListener('click', (e) => {
+  const row = e.target.closest('.palette-row');
+  if (row) runPaletteRow(palRows[Number(row.dataset.i)]);
+});
+paletteEl.addEventListener('click', (e) => { if (e.target === paletteEl) closePalette(); });
+spaceChip.addEventListener('click', openPalette);
+
 let searchDebounce = null;
 async function load() {
   const q = searchEl.value.trim();
-  const data = await api('GET', '/api/items' + (q ? '?q=' + encodeURIComponent(q) : ''));
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (searchAll) params.set('all', '1'); else params.set('space', activeSpaceId);
+  const data = await api('GET', '/api/items?' + params.toString());
   items = data.items;
   countEl.textContent = q ? `${items.length} / ${data.total}` : `${data.total}`;
   if (selected >= items.length) selected = items.length - 1;
@@ -286,6 +393,15 @@ document.addEventListener('keydown', (e) => {
   const inField = document.activeElement === searchEl || document.activeElement === composerEl
     || (document.activeElement && document.activeElement.classList.contains('card-edit'));
 
+  // command palette
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
+  if (!paletteEl.hidden) return; // palette handles its own keys
+  // 1–9 jump to space (only when not typing)
+  if (/^[1-9]$/.test(e.key) && !inField) {
+    const idx = Number(e.key) - 1;
+    if (spaces[idx]) { e.preventDefault(); switchSpace(spaces[idx].id); return; }
+  }
+
   // global: focus search
   if (e.key === '/' && !inField) { e.preventDefault(); searchEl.focus(); searchEl.select(); return; }
 
@@ -334,4 +450,4 @@ $('#addBtn').addEventListener('click', addText);
 setInterval(() => { if (!editingId) render(); }, 30000);
 
 // ---------- boot ----------
-load();
+(async () => { await loadSpaces(); await load(); })();

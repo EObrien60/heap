@@ -10,6 +10,7 @@
 <body>
   <header class="topbar">
     <div class="brand">heap</div>
+    <button id="spaceChip" class="space-chip" title="Switch space (⌘K)"><span class="dot"></span><span id="spaceName">…</span></button>
     <div class="search-wrap">
       <input id="search" type="text" placeholder="Search the heap…  ( / )" autocomplete="off" spellcheck="false" />
       <span id="count" class="count"></span>
@@ -30,6 +31,13 @@
 
   <div id="toast" class="toast"></div>
 
+  <div id="palette" class="palette-overlay" hidden>
+    <div class="palette">
+      <input id="paletteInput" type="text" placeholder="Jump to space, or type a command…" autocomplete="off" spellcheck="false" />
+      <div id="paletteList" class="palette-list"></div>
+    </div>
+  </div>
+
   <footer class="help">
     <span><kbd>/</kbd> search</span>
     <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
@@ -38,6 +46,8 @@
     <span><kbd>e</kbd> edit</span>
     <span><kbd>⌫</kbd> delete</span>
     <span><kbd>⌘V</kbd> paste in</span>
+    <span><kbd>⌘K</kbd> spaces</span>
+    <span><kbd>1</kbd>–<kbd>9</kbd> jump</span>
   </footer>
 
   <script src="/app.js"></script>
