@@ -3,10 +3,35 @@
   "version": "0.1.0",
   "private": true,
   "description": "A fast, light scratch store for the stuff you constantly paste in and out.",
+  "main": "electron/main.js",
   "bin": { "heap": "server.js" },
   "scripts": {
     "start": "node server.js",
+    "app": "electron .",
+    "dist": "electron-builder",
     "test": "node --test"
   },
-  "engines": { "node": ">=18" }
+  "engines": { "node": ">=18" },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "io.triplebolt.heap",
+    "productName": "heap",
+    "directories": { "output": "dist" },
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "server.js",
+      "lib/**/*",
+      "public/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.productivity",
+      "extendInfo": { "LSUIElement": 1 }
+    }
+  }
 }

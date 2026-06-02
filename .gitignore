@@ -4,6 +4,9 @@ data/
 # Node
 node_modules/
 
+# Electron build output
+dist/
+
 # Test/automation artifacts
 .playwright-mcp/
 *.tmp

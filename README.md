@@ -2,15 +2,31 @@
 
 A fast, light scratch store for the stuff you constantly paste in and out — SQL queries, variables, messages, bug reports, images. Replaces the "dump everything in Notes" workflow with something instant and keyboard-driven.
 
-Zero dependencies. Pure Node + a vanilla web UI. Your data lives in `./data/`.
+Runs two ways: a **desktop app** (macOS, summoned by a global hotkey) or a plain **local web app** (zero dependencies). The core (server + web UI) has no dependencies; only the desktop build uses Electron.
 
-## Run
+## Desktop app (macOS)
+
+A Spotlight-style frosted overlay that lives in the menu bar, summoned with a global hotkey (default **⌘⇧V**). No dock icon. Starts at login.
+
+```bash
+npm install        # one-time: pulls Electron + electron-builder
+npm run app        # run it
+npm run dist       # build heap.app + a .dmg into dist/
+```
+
+- **⌘⇧V** toggles the overlay (search auto-focused). Click away or hit it again to dismiss — focus snaps back to wherever you were, so you can paste immediately.
+- The **menu-bar tray** has Show heap · Launch at login · Quit.
+- **Unsigned build:** the first time you open `heap.app`, right-click it → **Open** to get past Gatekeeper (once).
+- **Change the hotkey:** edit `~/Library/Application Support/heap/config.json` (`{"hotkey": "CommandOrControl+Shift+V"}` — any [Electron accelerator](https://www.electronjs.org/docs/latest/api/accelerator)) and relaunch.
+- Desktop data lives in `~/Library/Application Support/heap/data/`.
+
+## Web app
 
 ```bash
 node server.js
 ```
 
-Opens `http://localhost:4321` in your browser (macOS). Pin the tab and leave it.
+Opens `http://localhost:4321` in your browser. Pin the tab and leave it.
 
 Custom port: `PORT=5000 node server.js`. Don't auto-open: `NO_OPEN=1 node server.js`.
 

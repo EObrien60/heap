@@ -12,7 +12,8 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const DATA_DIR = process.env.HEAP_DATA_DIR || path.join(ROOT, 'data');
 const IMAGES_DIR = path.join(DATA_DIR, 'images');
 const DB_FILE = path.join(DATA_DIR, 'heap.json');
-const PORT = Number(process.env.PORT) || 4321;
+// Honor PORT=0 (ephemeral) — `|| 4321` would wrongly treat "0" as unset.
+const PORT = process.env.PORT != null && process.env.PORT !== '' ? Number(process.env.PORT) : 4321;
 const MAX_BODY = 64 * 1024 * 1024;
 
 fs.mkdirSync(IMAGES_DIR, { recursive: true });
