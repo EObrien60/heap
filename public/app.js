@@ -12,6 +12,7 @@ const spaceNameEl = $('#spaceName');
 const paletteEl = $('#palette');
 const paletteInput = $('#paletteInput');
 const paletteList = $('#paletteList');
+const resumeText = $('#resumeText');
 
 let spaces = [];
 let activeSpaceId = null;
@@ -47,7 +48,26 @@ function renderChip() {
   if (!sp) return;
   spaceNameEl.textContent = sp.name;
   spaceChip.querySelector('.dot').style.background = sp.color;
+  renderResume();
 }
+function renderResume() {
+  const sp = activeSpace();
+  resumeText.textContent = sp ? sp.resumeNote : '';
+}
+resumeText.addEventListener('focus', () => resumeText.classList.add('editing'));
+resumeText.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); resumeText.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); renderResume(); resumeText.blur(); }
+});
+resumeText.addEventListener('blur', async () => {
+  resumeText.classList.remove('editing');
+  const sp = activeSpace();
+  const val = resumeText.textContent.trim();
+  if (sp && val !== sp.resumeNote) {
+    await api('PATCH', '/api/spaces/' + sp.id, { resumeNote: val });
+    sp.resumeNote = val;
+  }
+});
 async function switchSpace(id) {
   if (id === activeSpaceId) return;
   activeSpaceId = id;
@@ -182,7 +202,16 @@ function render() {
     }</div>`;
     return;
   }
-  listEl.innerHTML = items.map((it, i) => card(it, i)).join('');
+  const pinned = items.filter((i) => i.pinned);
+  const rest = items.filter((i) => !i.pinned);
+  let html = '';
+  if (pinned.length && rest.length) {
+    html += `<div class="list-section">Anchors</div>` + pinned.map((it, i) => card(it, i)).join('');
+    html += `<div class="list-section">Recent</div>` + rest.map((it, i) => card(it, pinned.length + i)).join('');
+  } else {
+    html = items.map((it, i) => card(it, i)).join('');
+  }
+  listEl.innerHTML = html;
   // ensure selected visible
   if (selected >= 0) {
     const el = listEl.children[selected];
