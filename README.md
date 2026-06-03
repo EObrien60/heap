@@ -46,7 +46,7 @@ A **Space** is a per-project context — a named bucket that keeps its own items
 ### Switching Spaces
 
 - **`⌘K`** — opens the command palette. Fuzzy-jump to any Space, or run a command: **New space**, **Rename** the active Space, or **Delete** it (its items move to another Space — you can't delete your last one).
-- **`1`–`9`** — jump instantly to your first nine Spaces.
+- **`⌘1`–`⌘9`** — jump instantly to your first nine Spaces (works even while the search box is focused, like browser tabs; bare `1`–`9` also works when you're not typing).
 - The active Space shows as a colored chip in the top bar — click it to open the palette too.
 
 ### Resume line
@@ -79,7 +79,7 @@ Search defaults to the **active Space**. Hit **`⌘\`** (or click the **all** to
 | `⌘↵` | save composer / edit |
 | `Esc` | clear selection / cancel edit |
 | `⌘K` | command palette (spaces) |
-| `1`–`9` | jump to Space by index |
+| `⌘1`–`⌘9` | jump to Space by index (also bare `1`–`9` when not typing) |
 | `⌘\` | toggle all-spaces search |
 
 ## Type detection

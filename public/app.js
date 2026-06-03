@@ -517,14 +517,19 @@ searchEl.addEventListener('input', () => {
 });
 
 document.addEventListener('keydown', (e) => {
-  const inField = document.activeElement === searchEl || document.activeElement === composerEl
-    || (document.activeElement && document.activeElement.classList.contains('card-edit'));
+  // "Typing" = any text-entry element has focus (search, composer, card-edit,
+  // the resume line, the modal input). Single-key shortcuts must never fire here,
+  // or e.g. Backspace in a field would delete the selected item.
+  const el = document.activeElement;
+  const inField = !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 
   // command palette
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
-  if (!paletteEl.hidden) return; // palette handles its own keys
-  // 1–9 jump to space (only when not typing)
-  if (/^[1-9]$/.test(e.key) && !inField) {
+  if (!paletteEl.hidden || !modalEl.hidden) return; // palette/modal own their keys
+
+  // Jump to space by index. Cmd/Ctrl+1–9 works anywhere (even with search focused,
+  // like browser tabs); bare 1–9 works only when not typing.
+  if (/^[1-9]$/.test(e.key) && (e.metaKey || e.ctrlKey || !inField)) {
     const idx = Number(e.key) - 1;
     if (spaces[idx]) { e.preventDefault(); switchSpace(spaces[idx].id); return; }
   }
@@ -569,6 +574,7 @@ document.addEventListener('keydown', (e) => {
 function renderScope() { scopeToggle.classList.toggle('on', searchAll); }
 scopeToggle.addEventListener('click', () => { searchAll = !searchAll; renderScope(); load(); });
 document.addEventListener('keydown', (e) => {
+  if (!paletteEl.hidden || !modalEl.hidden) return;
   if ((e.metaKey || e.ctrlKey) && e.key === '\\') { e.preventDefault(); searchAll = !searchAll; renderScope(); load(); }
 });
 
