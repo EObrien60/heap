@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server.js",
     "app": "electron .",
-    "dist": "electron-builder",
+    "dist": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder",
     "test": "node --test"
   },
   "engines": { "node": ">=18" },
@@ -34,6 +34,7 @@
       "target": ["dmg"],
       "category": "public.app-category.productivity",
       "icon": "assets/icon.icns",
+      "identity": null,
       "extendInfo": { "LSUIElement": 1 }
     }
   }
